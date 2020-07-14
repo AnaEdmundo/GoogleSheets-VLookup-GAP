@@ -1,0 +1,86 @@
+function FunctionAutoVlookup() {
+  
+  // First step: Open the tabs from the file and get all the values in an array of arrays 
+  
+  var selectedTab = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Insert here Tab/Sheet Name");
+  var textFormat = selectedTab.getDataRange().setNumberFormat('@');
+  var values = selectedTab.getDataRange().getValues();
+  var valuesLr = selectedTab.getLastRow();
+  var valuesLc = selectedTab.getLastColumn();
+  
+  
+  // Second Step: Open the key (combination of values pairs) and get the key values in an array of arrays 
+     // If in another tab
+  var keyTab = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Insert here Tab/Sheet Name");
+  var keyLr = keyTab.getLastRow();
+    // Based on the exact location of the columns you have, insert the numbers in .getRange(start row, start column, number of rows, number of columns) 
+  var key = keyTab.getRange(1, 1, keyLr, 3).getValues();
+  
+  var keyReference = [];
+  for (var i = 0; i < keyLr; i++) {
+    keyReference.push(Key[i][2]);
+  }
+  var newKey = key.map(function(i){return i[0] + i[1]});
+
+  // Here starts the loop functioning as Vlookup
+  var c = 0;
+  var newTable = [];
+  for (var i = 1; i < valuesLr; i++) {
+    var newLine = [];
+    for (var f = 0; f < valuesLc; f++) {
+      var element = values[0][f] + values[i][f];
+      var elementValue = values[i][f];
+      //console.log(element);
+      var reference = keyReference[newKey.indexOf(element)];
+      //console.log(reference);
+
+ //Additional feature in case the script does not find the value it will highlight the missing values in red capturing the values based on filled cell sequence
+      if (i == valuesLr-1) {
+        var element3 = values[i - 1][f];
+        if(elementValue !== '' || elementValue == '' && element3 !== ''){
+        if (typeof (reference) === 'undefined') {
+          // Here we count the issues with a new variable and store the element information 
+          selectedTab.getRange(i + 1, f + 1).setBackground("#F08080");
+          c++;
+        }
+        }
+      } else {
+        var element2 = values[i + 1][f];
+        //console.log(element2);
+        if (elementValue !== '' || elementValue == '' && element2 !== '') {
+          if (typeof (reference) === 'undefined') {
+            selectedTab.getRange(i + 1, f + 1).setBackground("#F08080");
+            c++;
+          }
+        }
+      }
+// Continuation of the Lookup to create the new value table
+      if (f < valuesLc - 1) {
+        newLine.push([reference]);
+        //console.log(newLine)
+
+      } else {
+        newLine.push([reference]);
+        //console.log(newLine);
+        newTable.push(newLine);
+      }
+
+    }
+  }
+  //console.log("Completed the Lookup loop");
+
+// Additional feature to identify the number of mismatches and add it into a specific cell
+
+  var loggerTab = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Insert here Tab/Sheet Name");
+  // select the exact location based on your preference
+  var countCellValueWrite = loggerTab.getRange(2, 2).setValue(c);
+  //console.log("Completed the stamp");
+
+ // Last Step: Paste of the new formed table of values to a tab
+    var OutputTab = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Insert here Tab/Sheet Name").clear();
+    var paste = OutputTab.getRange(2, 1, newTable.length, newTable[0].length).setValues(newTable);
+    Browser.msgBox("Vlookup Completed!")
+  }
+
+}
+
